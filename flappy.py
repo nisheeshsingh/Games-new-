@@ -143,7 +143,8 @@ def create_bird_graphics(color):
     images = []
     
     for wing_state in range(4):
-        bird_surf = pygame.Surface((80, 70), pygame.SRCALPHA)
+        # Use larger surface (100x90) for clean rotation without clipping
+        bird_surf = pygame.Surface((100, 90), pygame.SRCALPHA)
         bird_surf.fill((0, 0, 0, 0))
         
         # For rainbow skin, use different colors for body parts
@@ -164,35 +165,35 @@ def create_bird_graphics(color):
             head_color = color
         
         # Deep shadow
-        pygame.draw.ellipse(bird_surf, (0, 0, 0, 80), (12, 36, 36, 10))
+        pygame.draw.ellipse(bird_surf, (0, 0, 0, 80), (22, 46, 36, 10))
         
         # Body - main colored circle with gradient effect
-        pygame.draw.ellipse(bird_surf, body_color, (10, 12, 28, 22))
-        pygame.draw.ellipse(bird_surf, tuple(min(255, c + 40) for c in body_color), (12, 14, 24, 18))
+        pygame.draw.ellipse(bird_surf, body_color, (20, 22, 28, 22))
+        pygame.draw.ellipse(bird_surf, tuple(min(255, c + 40) for c in body_color), (22, 24, 24, 18))
         
         # Head - larger and better proportioned
-        pygame.draw.circle(bird_surf, head_color, (36, 16), 11)
-        pygame.draw.circle(bird_surf, tuple(min(255, c + 40) for c in head_color), (36, 16), 9)
+        pygame.draw.circle(bird_surf, head_color, (46, 26), 11)
+        pygame.draw.circle(bird_surf, tuple(min(255, c + 40) for c in head_color), (46, 26), 9)
         
         # Eyes - more expressive
-        pygame.draw.circle(bird_surf, (255, 255, 255), (39, 13), 5)
-        pygame.draw.circle(bird_surf, (240, 240, 255), (39, 13), 3)
-        pygame.draw.circle(bird_surf, (0, 0, 0), (40, 12), 3)
-        pygame.draw.circle(bird_surf, (100, 100, 100), (40, 12), 1)
+        pygame.draw.circle(bird_surf, (255, 255, 255), (49, 23), 5)
+        pygame.draw.circle(bird_surf, (240, 240, 255), (49, 23), 3)
+        pygame.draw.circle(bird_surf, (0, 0, 0), (50, 22), 3)
+        pygame.draw.circle(bird_surf, (100, 100, 100), (50, 22), 1)
         
         # Beak - more prominent
         beak_color = (255, 170, 0)
-        pygame.draw.polygon(bird_surf, beak_color, [(46, 16), (56, 14), (46, 20)])
-        pygame.draw.polygon(bird_surf, (200, 100, 0), [(46, 16), (56, 14), (46, 20)], 2)
+        pygame.draw.polygon(bird_surf, beak_color, [(56, 26), (66, 24), (56, 30)])
+        pygame.draw.polygon(bird_surf, (200, 100, 0), [(56, 26), (66, 24), (56, 30)], 2)
         
         # Wing animation - smooth flapping
         wing_offset = int(6 * (wing_state - 1.5))
         wing_color = colors[(wing_state + 2) % len(colors)] if color is None else (240, 160, 0)
         wing_points = [
-            (18, 16 + wing_offset),
-            (32, 8 + wing_offset),
-            (34, 14 + wing_offset),
-            (19, 20 + wing_offset)
+            (28, 26 + wing_offset),
+            (42, 18 + wing_offset),
+            (44, 24 + wing_offset),
+            (29, 30 + wing_offset)
         ]
         
         pygame.draw.polygon(bird_surf, wing_color, wing_points)
@@ -200,12 +201,14 @@ def create_bird_graphics(color):
         
         # Tail feathers - two layers for depth
         tail_color = colors[(wing_state + 3) % len(colors)] if color is None else (220, 140, 0)
-        pygame.draw.polygon(bird_surf, tail_color, [(10, 14), (-2, 6), (2, 12)])
-        pygame.draw.polygon(bird_surf, (200, 120, 0), [(10, 18), (-2, 22), (2, 20)])
+        pygame.draw.polygon(bird_surf, tail_color, [(20, 24), (8, 16), (12, 22)])
+        pygame.draw.polygon(bird_surf, (200, 120, 0), [(20, 28), (8, 32), (12, 30)])
         
         # Body shading for 3D effect
-        pygame.draw.circle(bird_surf, (0, 0, 0, 50), (22, 28), 10)
+        pygame.draw.circle(bird_surf, (0, 0, 0, 50), (32, 38), 10)
         
+        # Optimize for faster blitting
+        bird_surf = bird_surf.convert_alpha()
         images.append(bird_surf)
     
     return images
@@ -295,8 +298,9 @@ class Powerup(pygame.sprite.Sprite):
         self.elapsed = 0.0
         self.pulse_time = 0.0
         
-        # Create powerup sprite
-        self.image = pygame.Surface((50, 50), pygame.SRCALPHA)
+        # Create powerup sprite with larger surface for clean rotation
+        self.image = pygame.Surface((100, 100), pygame.SRCALPHA)
+        self.image.fill((0, 0, 0, 0))
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.mask = pygame.mask.from_surface(self.image)
@@ -374,29 +378,29 @@ class Powerup(pygame.sprite.Sprite):
         angle = (self.elapsed * 120) % 360
         scale = 1.0 + 0.15 * pygame.math.Vector2(1, 0).rotate(self.pulse_time * 180).y
         
-        # Create fresh large surface for this frame to avoid rotation artifacts
-        temp_surf = pygame.Surface((80, 80), pygame.SRCALPHA)
+        # Create fresh LARGE surface for this frame to avoid rotation artifacts
+        temp_surf = pygame.Surface((120, 120), pygame.SRCALPHA)
         temp_surf.fill((0, 0, 0, 0))
         
-        # Draw the shape fresh on temporary surface
+        # Draw the shape fresh on temporary surface (centered in larger surface)
         if self.powerup_type == self.IMMUNITY:
-            # Draw heart
-            pygame.draw.circle(temp_surf, (255, 50, 50), (25, 25), 10)
-            pygame.draw.circle(temp_surf, (255, 50, 50), (55, 25), 10)
-            pygame.draw.polygon(temp_surf, (255, 50, 50), [(15, 30), (65, 30), (40, 60)])
-            pygame.draw.circle(temp_surf, (255, 150, 150), (25, 25), 6)
-            pygame.draw.circle(temp_surf, (255, 150, 150), (55, 25), 6)
+            # Draw heart (centered in 120x120)
+            pygame.draw.circle(temp_surf, (255, 50, 50), (40, 40), 12)
+            pygame.draw.circle(temp_surf, (255, 50, 50), (80, 40), 12)
+            pygame.draw.polygon(temp_surf, (255, 50, 50), [(20, 45), (100, 45), (60, 90)])
+            pygame.draw.circle(temp_surf, (255, 150, 150), (40, 40), 7)
+            pygame.draw.circle(temp_surf, (255, 150, 150), (80, 40), 7)
         else:
-            # Draw star - fresh calculation each frame
+            # Draw star - fresh calculation each frame (centered in 120x120)
             points = []
             for i in range(10):
                 angle_rad = i * 3.14159 / 5
                 if i % 2 == 0:
-                    r = 20
+                    r = 28
                 else:
-                    r = 10
-                x = 40 + r * pygame.math.Vector2(1, 0).rotate(angle_rad * 180 / 3.14159).x
-                y = 40 + r * pygame.math.Vector2(1, 0).rotate(angle_rad * 180 / 3.14159).y
+                    r = 14
+                x = 60 + r * pygame.math.Vector2(1, 0).rotate(angle_rad * 180 / 3.14159).x
+                y = 60 + r * pygame.math.Vector2(1, 0).rotate(angle_rad * 180 / 3.14159).y
                 points.append((x, y))
             pygame.draw.polygon(temp_surf, (255, 240, 0), points)
             pygame.draw.polygon(temp_surf, (255, 255, 100), points, 2)
@@ -1316,11 +1320,7 @@ if __name__ == "__main__":
                 ground_group.update()
             
                 # Draw bird manually with full transparency during GET READY
-                # Use base image (unrotated) for static display
-                bird_display = pygame.Surface((80, 70), pygame.SRCALPHA)
-                bird_display.fill((0, 0, 0, 0))
-                bird_display.blit(bird.image, (0, 0))
-                screen.blit(bird_display, bird.rect)
+                screen.blit(bird.image, bird.rect)
                 ground_group.draw(screen)
             
                 # Draw "GET READY" text
