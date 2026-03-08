@@ -374,57 +374,59 @@ class Powerup(pygame.sprite.Sprite):
         return self.elapsed < self.lifetime
     
     def draw(self, screen):
-        """Draw powerup with rotating effect - beautiful rendering"""
+        """Draw powerup with rotating effect - realistic heart and star"""
         import math
         angle = (self.elapsed * 180) % 360
         angle_rad = angle * 3.14159 / 180
-        scale = 1.0 + 0.2 * math.sin(self.pulse_time * 3.14159)
+        scale = 1.0 + 0.25 * math.sin(self.pulse_time * 3.14159)
         
         cx, cy = self.rect.center
         
         if self.powerup_type == self.IMMUNITY:
-            # Draw beautiful heart shape
-            size = 10 * scale
-            # Top left bump
-            pygame.draw.circle(screen, (255, 50, 50), (int(cx - size), int(cy - size//2)), int(size))
-            pygame.draw.circle(screen, (255, 100, 100), (int(cx - size), int(cy - size//2)), int(size//2))
-            # Top right bump
-            pygame.draw.circle(screen, (255, 50, 50), (int(cx + size), int(cy - size//2)), int(size))
-            pygame.draw.circle(screen, (255, 100, 100), (int(cx + size), int(cy - size//2)), int(size//2))
-            # Bottom triangle
-            pygame.draw.polygon(screen, (255, 50, 50), [
-                (int(cx - size*1.8), int(cy + size*0.5)),
-                (int(cx + size*1.8), int(cy + size*0.5)),
-                (int(cx), int(cy + size*2.5))
-            ])
-            # Shine
-            pygame.draw.circle(screen, (255, 150, 150), (int(cx - size*0.5), int(cy - size)), int(size//3))
+            # Draw realistic heart shape
+            size = 12 * scale
+            # Left bump (circle)
+            pygame.draw.circle(screen, (255, 50, 50), (int(cx - 0.6*size), int(cy - 0.7*size)), int(0.9*size))
+            # Right bump (circle)
+            pygame.draw.circle(screen, (255, 50, 50), (int(cx + 0.6*size), int(cy - 0.7*size)), int(0.9*size))
+            # Bottom point (triangle)
+            pts = [
+                (int(cx - 1.8*size), int(cy + 0.3*size)),
+                (int(cx + 1.8*size), int(cy + 0.3*size)),
+                (int(cx), int(cy + 2.2*size))
+            ]
+            pygame.draw.polygon(screen, (255, 50, 50), pts)
+            # Outline
+            pygame.draw.circle(screen, (255, 100, 100), (int(cx - 0.6*size), int(cy - 0.7*size)), int(0.9*size), 2)
+            pygame.draw.circle(screen, (255, 100, 100), (int(cx + 0.6*size), int(cy - 0.7*size)), int(0.9*size), 2)
+            pygame.draw.polygon(screen, (255, 100, 100), pts, 2)
+            # Shine effect
+            pygame.draw.circle(screen, (255, 150, 150), (int(cx - 0.7*size), int(cy - 1.1*size)), int(0.4*size))
         else:
-            # Draw beautiful rotating star
-            size = 14 * scale
+            # Draw realistic 5-point star
+            size = 16 * scale
             points = []
             for i in range(10):
-                angle_point = angle_rad + (i * 3.14159 / 5)
+                angle_point = angle_rad + (i * 3.14159 / 5) - 3.14159/2  # Start at top
                 if i % 2 == 0:
                     r = size
                 else:
-                    r = size * 0.5
+                    r = size * 0.4
                 x = cx + r * math.cos(angle_point)
                 y = cy + r * math.sin(angle_point)
                 points.append((int(x), int(y)))
             
             if len(points) >= 5:
                 pygame.draw.polygon(screen, (255, 240, 0), points)
-                pygame.draw.polygon(screen, (255, 200, 0), points, 2)
-                # Inner shine
-                inner_size = size * 0.5
+                pygame.draw.polygon(screen, (255, 200, 0), points, 3)
+                # Inner highlight star
                 inner_points = []
                 for i in range(10):
-                    angle_point = angle_rad + (i * 3.14159 / 5)
+                    angle_point = angle_rad + (i * 3.14159 / 5) - 3.14159/2
                     if i % 2 == 0:
-                        r = inner_size * 0.5
+                        r = size * 0.3
                     else:
-                        r = inner_size * 0.2
+                        r = size * 0.15
                     x = cx + r * math.cos(angle_point)
                     y = cy + r * math.sin(angle_point)
                     inner_points.append((int(x), int(y)))
@@ -1304,21 +1306,21 @@ def show_game_over_menu(final_score, final_high_score, coins_earned=0, total_coi
         overlay.fill((0, 0, 0))
         screen.blit(overlay, (0, 0))
         
-        draw_glowing_box(SCREEN_WIDHT//2 - 220, 30, 440, 540, dark_color, accent_color, 5)
+        draw_glowing_box(SCREEN_WIDHT//2 - 240, 20, 480, 560, dark_color, accent_color, 6)
         
-        draw_text_with_shadow('GAME OVER', 64, accent_color, shadow_color,
-                             SCREEN_WIDHT//2 - 150, 60, offset=4)
-        draw_text_with_shadow(f'Score: {final_score}', 40, text_color, shadow_color,
-                             SCREEN_WIDHT//2 - 80, 160, offset=3)
-        draw_text_with_shadow(f'High Score: {final_high_score}', 40, accent_color, shadow_color,
-                             SCREEN_WIDHT//2 - 160, 230, offset=3)
-        draw_text_with_shadow(f'Coins Earned: +{coins_earned}', 36, (255, 215, 0), shadow_color,
-                             SCREEN_WIDHT//2 - 150, 310, offset=3)
-        draw_text_with_shadow(f'Total Coins: {total_coins}', 36, (255, 215, 0), shadow_color,
-                             SCREEN_WIDHT//2 - 140, 380, offset=3)
+        draw_text_with_shadow('GAME OVER', 72, accent_color, shadow_color,
+                             SCREEN_WIDHT//2 - 180, 40, offset=4)
+        draw_text_with_shadow(f'Score: {final_score}', 48, text_color, shadow_color,
+                             SCREEN_WIDHT//2 - 100, 150, offset=3)
+        draw_text_with_shadow(f'High Score: {final_high_score}', 44, (255, 215, 0), shadow_color,
+                             SCREEN_WIDHT//2 - 170, 230, offset=3)
+        draw_text_with_shadow(f'Coins Earned: +{coins_earned}', 40, (100, 255, 100), shadow_color,
+                             SCREEN_WIDHT//2 - 160, 320, offset=3)
+        draw_text_with_shadow(f'Total Coins: {total_coins}', 40, (255, 215, 0), shadow_color,
+                             SCREEN_WIDHT//2 - 150, 400, offset=3)
         
-        button_width = 240
-        button_height = 70
+        button_width = 280
+        button_height = 80
         button_x = SCREEN_WIDHT//2 - button_width//2
         
         buttons = [
@@ -1537,9 +1539,9 @@ if __name__ == "__main__":
                     powerup.draw(screen)
             
                 # Draw score with enhanced styling
-                draw_glowing_box(10, 10, 280, 110, dark_color, accent_color, 4)
-                draw_text_with_shadow(f'Score: {score}', 44, accent_color, shadow_color, 25, 18, offset=2)
-                draw_text_with_shadow(f'Coins: {total_coins}', 36, (255, 215, 0), shadow_color, 25, 70, offset=2)
+                draw_glowing_box(10, 10, 300, 120, dark_color, accent_color, 5)
+                draw_text_with_shadow(f'Score: {score}', 48, accent_color, shadow_color, 30, 20, offset=2)
+                draw_text_with_shadow(f'Coins: {total_coins}', 40, (255, 215, 0), shadow_color, 30, 75, offset=2)
             
                 # Draw powerup status with better styling
                 powerup_y_offset = 130
@@ -1574,10 +1576,13 @@ if __name__ == "__main__":
             
                 pygame.display.update()
             
-                # Check collisions
-                ground_collision = pygame.sprite.groupcollide(bird_group, ground_group, False, False, pygame.sprite.collide_mask)
-                pipe_collision = pygame.sprite.groupcollide(bird_group, pipe_group, False, False, pygame.sprite.collide_mask) and bird.immunity_time <= 0
-                ceiling_collision = bird.rect.top <= 0
+                # Check collisions - only body color collision
+                # Create a small rect for just the bird body (not wings/tail)
+                body_rect = pygame.Rect(bird.rect.centerx - 8, bird.rect.centery - 8, 16, 16)
+                
+                ground_collision = any(body_rect.colliderect(sprite.rect) for sprite in ground_group.sprites())
+                pipe_collision = any(body_rect.colliderect(sprite.rect) for sprite in pipe_group.sprites()) and bird.immunity_time <= 0
+                ceiling_collision = bird.rect.top <= 5
             
                 if ground_collision or pipe_collision or ceiling_collision:
                     play(hit)
