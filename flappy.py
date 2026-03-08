@@ -100,21 +100,21 @@ current_theme = 0
 
 # Bird skins - (name, color, cost, powerup_boost, is_premium, is_legendary)
 BIRD_SKINS = [
-    ("Classic Gold", (255, 200, 0), 0, 1.0, False, False),
-    ("Royal Blue", (25, 100, 200), 150, 1.3, False, False),
-    ("Crimson Red", (220, 20, 60), 200, 1.5, False, False),
-    ("Emerald Green", (50, 205, 50), 250, 1.8, False, False),
-    ("Electric Purple", (138, 43, 226), 300, 2.0, False, False),
-    ("Sunset Orange", (255, 140, 0), 200, 1.5, False, False),
-    ("Aqua Cyan", (0, 255, 255), 250, 1.8, False, False),
-    ("Rose Pink", (255, 105, 180), 300, 2.0, False, False),
-    ("Forest Guardian", (144, 238, 144), 500, 2.5, True, False),
-    ("Ocean Blue", (64, 224, 208), 500, 2.5, True, False),
-    ("Sunset Blaze", (255, 165, 0), 600, 2.8, True, False),
-    ("Midnight Mystic", (186, 85, 211), 600, 2.8, True, False),
-    ("Neon Cyber", (0, 255, 255), 700, 3.0, True, False),
-    ("Hellfire Dragon", (255, 69, 0), 800, 3.2, True, False),
-    ("Rainbow Legend", None, 1500, 5.0, True, True),
+    ("Classic Gold",    (255, 200, 0),    0,     1.0, False, False),
+    ("Royal Blue",      (25, 100, 200),   500,   1.3, False, False),
+    ("Crimson Red",     (220, 20, 60),    750,   1.5, False, False),
+    ("Emerald Green",   (50, 205, 50),    1000,  1.8, False, False),
+    ("Electric Purple", (138, 43, 226),   1250,  2.0, False, False),
+    ("Sunset Orange",   (255, 140, 0),    750,   1.5, False, False),
+    ("Aqua Cyan",       (0, 255, 255),    1000,  1.8, False, False),
+    ("Rose Pink",       (255, 105, 180),  1250,  2.0, False, False),
+    ("Forest Guardian", (144, 238, 144),  2500,  2.5, True,  False),
+    ("Ocean Blue",      (64, 224, 208),   2500,  2.5, True,  False),
+    ("Sunset Blaze",    (255, 165, 0),    3500,  2.8, True,  False),
+    ("Midnight Mystic", (186, 85, 211),   3500,  2.8, True,  False),
+    ("Neon Cyber",      (0, 255, 255),    5000,  3.0, True,  False),
+    ("Hellfire Dragon", (255, 69, 0),     7500,  3.2, True,  False),
+    ("Rainbow Legend",  None,             15000, 5.0, True,  True),
 ]
 
 owned_bird_skins = {0}
@@ -436,7 +436,13 @@ class FloatingScore:
         progress = min(1.0, self.elapsed / self.lifetime)
         alpha = int(255 * (1 - progress))
         text = f"+{int(self.score)}"
-        text_surf = self.font.render(text, True, self.accent_color)
+        font = get_font(52)
+        # Shadow
+        sh = font.render(text, True, (0, 0, 0))
+        sh.set_alpha(alpha // 2)
+        screen.blit(sh, (int(self.x - sh.get_width() // 2) + 2, int(self.y) + 2))
+        # Main text
+        text_surf = font.render(text, True, self.accent_color)
         text_surf.set_alpha(alpha)
         screen.blit(text_surf, (int(self.x - text_surf.get_width() // 2), int(self.y)))
 
@@ -621,110 +627,193 @@ def get_font(size, bold=False):
 
 def draw_text_with_shadow(text, size, color, shadow_color, x, y, offset=3):
     font = get_font(size)
-    text_width, text_height = font.size(text)
-    bg_surf = pygame.Surface((text_width + 10, text_height + 6), pygame.SRCALPHA)
-    bg_surf.fill((0, 0, 0, 160))
-    screen.blit(bg_surf, (x - 5, y - 3))
+    # Crisp multi-layer drop shadow - no background box
     for i in range(offset, 0, -1):
-        alpha_shadow = int(120 * (i / offset))
-        shadow_surf = pygame.Surface((text_width + offset * 2, text_height + offset * 2), pygame.SRCALPHA)
-        temp_text = font.render(text, True, shadow_color)
-        shadow_surf.blit(temp_text, (offset, offset))
+        alpha_shadow = int(200 * (i / offset))
+        shadow_surf = font.render(text, True, shadow_color)
         shadow_surf.set_alpha(alpha_shadow)
-        screen.blit(shadow_surf, (x - offset + i, y - offset + i))
+        screen.blit(shadow_surf, (x + i, y + i))
     text_surf = font.render(text, True, color)
     screen.blit(text_surf, (x, y))
 
 
 def draw_glowing_box(x, y, width, height, color, glow_color, border_width=3):
-    shadow_surface = pygame.Surface((width + 14, height + 14), pygame.SRCALPHA)
-    pygame.draw.rect(shadow_surface, (0, 0, 0, 160), (3, 3, width + 8, height + 8), border_radius=12)
-    screen.blit(shadow_surface, (x - 7, y + 8))
-    for i in range(border_width + 3, 0, -1):
-        alpha = int(255 * (1 - i / (border_width + 3)) * 0.4)
-        glow_surf = pygame.Surface((width + i*2 + 4, height + i*2 + 4), pygame.SRCALPHA)
-        pygame.draw.rect(glow_surf, (*glow_color, alpha), (0, 0, width + i*2 + 4, height + i*2 + 4),
-                         max(1, i), border_radius=14)
-        screen.blit(glow_surf, (x - i - 2, y - i - 2))
-    pygame.draw.rect(screen, color, (x, y, width, height), border_radius=10)
-    light_color = tuple(min(255, c + 80) for c in color)
-    pygame.draw.rect(screen, light_color, (x + 2, y + 2, width - 4, 3), border_radius=4)
-    pygame.draw.rect(screen, glow_color, (x, y, width, height), border_width, border_radius=10)
+    # Deep drop shadow
+    shadow_surface = pygame.Surface((width + 20, height + 20), pygame.SRCALPHA)
+    pygame.draw.rect(shadow_surface, (0, 0, 0, 110), (5, 7, width + 10, height + 10), border_radius=14)
+    screen.blit(shadow_surface, (x - 8, y + 5))
+    # Soft outer glow rings
+    for i in range(border_width + 6, 0, -1):
+        alpha = int(160 * (1 - i / (border_width + 6)) * 0.4)
+        glow_surf = pygame.Surface((width + i*2 + 6, height + i*2 + 6), pygame.SRCALPHA)
+        pygame.draw.rect(glow_surf, (*glow_color, alpha),
+                         (0, 0, width + i*2 + 6, height + i*2 + 6), border_radius=16)
+        screen.blit(glow_surf, (x - i - 3, y - i - 3))
+    # Glass body
+    glass_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+    r, g, b = color[0], color[1], color[2]
+    glass_surf.fill((r, g, b, 215))
+    # Top glass-sheen highlight
+    hi_h = max(3, height // 4)
+    hi_surf = pygame.Surface((width - 6, hi_h), pygame.SRCALPHA)
+    hi_surf.fill((min(255, r+80), min(255, g+80), min(255, b+80), 70))
+    glass_surf.blit(hi_surf, (3, 3))
+    # Bottom subtle shadow band
+    sh_h = max(2, height // 10)
+    sh_surf = pygame.Surface((width - 6, sh_h), pygame.SRCALPHA)
+    sh_surf.fill((0, 0, 0, 50))
+    glass_surf.blit(sh_surf, (3, height - sh_h - 2))
+    screen.blit(glass_surf, (x, y))
+    # Outer border + inner bright rim
+    pygame.draw.rect(screen, glow_color, (x, y, width, height), border_width, border_radius=12)
+    light_edge = tuple(min(255, c + 90) for c in glow_color)
+    pygame.draw.rect(screen, light_edge, (x + 1, y + 1, width - 2, height - 2), 1, border_radius=11)
 
 
 def draw_button(x, y, width, height, text, color, text_color, glow_color, is_hovered=False):
-    scale_offset = 4 if is_hovered else 0
+    scale_offset = 5 if is_hovered else 0
     sx, sy = x - scale_offset, y - scale_offset
     sw, sh = width + scale_offset * 2, height + scale_offset * 2
-    draw_glowing_box(sx, sy, sw, sh, color, glow_color, 6 if is_hovered else 3)
-    font = get_font(48 if is_hovered else 44)
+    draw_glowing_box(sx, sy, sw, sh, color, glow_color, 5 if is_hovered else 2)
+    font_size = 50 if is_hovered else 44
+    font = get_font(font_size)
+    # Text glow on hover
+    if is_hovered:
+        for goff in [4, 2]:
+            gsurf = font.render(text, True, glow_color)
+            gsurf.set_alpha(60)
+            gr = gsurf.get_rect(center=(x + width // 2 + goff, y + height // 2 + goff))
+            screen.blit(gsurf, gr)
     text_surf = font.render(text, True, text_color)
     text_rect = text_surf.get_rect(center=(x + width // 2, y + height // 2))
+    # Drop shadow on text
     shadow_surf = font.render(text, True, (0, 0, 0))
-    shadow_surf.set_alpha(180)
-    for off in [4, 2]:
-        screen.blit(shadow_surf, text_rect.move(off, off))
+    shadow_surf.set_alpha(160)
+    screen.blit(shadow_surf, text_rect.move(3, 3))
     screen.blit(text_surf, text_rect)
 
 
 def draw_title_box(title, subtitle, theme_data):
-    title_y = 20
-    for i in range(4):
-        alpha = int(255 * (1 - i / 4.0))
-        bar_surf = pygame.Surface((SCREEN_WIDHT - 100, 4), pygame.SRCALPHA)
+    # Top accent bar (gradient fade out to sides)
+    bar_w = SCREEN_WIDHT - 80
+    for i in range(6):
+        alpha = int(255 * (1 - i / 6.0))
+        bar_surf = pygame.Surface((bar_w, 4 - min(i, 2)), pygame.SRCALPHA)
         bar_surf.fill((*theme_data['accent'], alpha))
-        screen.blit(bar_surf, (50, 10 + i))
-    title_x = SCREEN_WIDHT // 2 - 150
-    draw_text_with_shadow(title, 72, theme_data['accent'], theme_data['shadow'], title_x, title_y, offset=5)
-    for i in range(3):
-        pygame.draw.line(screen, theme_data['accent'], (100, 98 + i), (SCREEN_WIDHT - 100, 98 + i), max(1, 3 - i))
-    accent_bright = tuple(min(255, c + 60) for c in theme_data['accent'])
-    pygame.draw.circle(screen, accent_bright, (100, 98), 4)
-    pygame.draw.circle(screen, accent_bright, (SCREEN_WIDHT - 100, 98), 4)
+        screen.blit(bar_surf, (40, 8 + i))
+
+    # Title text with a behind-glow blob
+    title_font = get_font(76)
+    tw, th = title_font.size(title)
+    title_x = SCREEN_WIDHT // 2 - tw // 2
+
+    # Glow blob behind title
+    blob_surf = pygame.Surface((tw + 80, th + 30), pygame.SRCALPHA)
+    for r in range(40, 0, -4):
+        a = int(18 * (1 - r / 40.0))
+        pygame.draw.ellipse(blob_surf, (*theme_data['accent'], a),
+                            (40 - r, 15 - r//2, tw + r*2, th + r))
+    screen.blit(blob_surf, (title_x - 40, 14))
+
+    # Shadow layers then title
+    for off in [5, 3, 1]:
+        sh = title_font.render(title, True, theme_data['shadow'])
+        sh.set_alpha(int(200 * (1 - off/6)))
+        screen.blit(sh, (title_x + off, 18 + off))
+    title_surf = title_font.render(title, True, theme_data['accent'])
+    screen.blit(title_surf, (title_x, 18))
+
+    # Decorative ruled line below title with jewel endcaps
+    line_y = 100
+    pygame.draw.line(screen, theme_data['accent'], (80, line_y), (SCREEN_WIDHT - 80, line_y), 3)
+    pygame.draw.line(screen, theme_data['accent'], (80, line_y + 5), (SCREEN_WIDHT - 80, line_y + 5), 1)
+    accent_bright = tuple(min(255, c + 80) for c in theme_data['accent'])
+    for ex, ey in [(80, line_y), (SCREEN_WIDHT - 80, line_y)]:
+        pygame.draw.circle(screen, accent_bright, (ex, ey), 6)
+        pygame.draw.circle(screen, (255, 255, 255), (ex, ey), 3)
+
     if subtitle:
-        draw_text_with_shadow(subtitle, 28, theme_data['text'], theme_data['shadow'],
-                              SCREEN_WIDHT // 2 - 100, title_y + 75, offset=2)
+        sf = get_font(30)
+        sw2 = sf.size(subtitle)[0]
+        sx = SCREEN_WIDHT // 2 - sw2 // 2
+        for off in [3, 1]:
+            sh = sf.render(subtitle, True, theme_data['shadow'])
+            sh.set_alpha(150)
+            screen.blit(sh, (sx + off, 68 + off))
+        screen.blit(sf.render(subtitle, True, theme_data['text']), (sx, 68))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HUD  (in-game score panel)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def draw_hud(screen, score, total_coins, bird, dark_color, accent_color, shadow_color, text_color):
-    """Draw a polished in-game HUD."""
-    # Score panel (top-left)
-    draw_glowing_box(10, 10, 240, 100, dark_color, accent_color, 4)
-    draw_text_with_shadow(f'Score: {score}', 44, accent_color, shadow_color, 25, 18, offset=2)
-    # Coin icon then value
-    draw_heart(screen, 30, 77, 10, color=(255, 215, 0), outline_color=(200, 160, 0))
-    draw_text_with_shadow(f'{total_coins} coins', 34, (255, 215, 0), shadow_color, 48, 65, offset=1)
+def draw_pill(x, y, w, h, fill_color, border_color, alpha=210):
+    """Draw a rounded pill/badge directly to the screen."""
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    r, g, b = fill_color[0], fill_color[1], fill_color[2]
+    pygame.draw.rect(surf, (r, g, b, alpha), (0, 0, w, h), border_radius=h // 2)
+    # Gloss sheen
+    hi_surf = pygame.Surface((w - 10, h // 3), pygame.SRCALPHA)
+    hi_surf.fill((255, 255, 255, 40))
+    pygame.draw.rect(hi_surf, (255, 255, 255, 40), hi_surf.get_rect(), border_radius=h // 4)
+    surf.blit(hi_surf, (5, 4))
+    screen.blit(surf, (x, y))
+    pygame.draw.rect(screen, border_color, (x, y, w, h), 2, border_radius=h // 2)
 
-    # Powerup bars (below score panel)
-    py = 120
+
+def draw_hud(screen, score, total_coins, bird, dark_color, accent_color, shadow_color, text_color):
+    """Draw a polished in-game HUD with pill-badges — no black boxes."""
+    font_big = get_font(46)
+    font_sm = get_font(30)
+
+    # ── Score badge ──
+    score_str = f"  {score}"
+    sw = font_big.size(score_str)[0] + 56
+    draw_pill(10, 10, sw, 48, dark_color, accent_color, 210)
+    # Star icon
+    star_pts = [(int(34 + 10*math.cos(math.radians(-90 + i*36))),
+                 int(34 + 10*math.sin(math.radians(-90 + i*36))))
+                if i % 2 == 0 else
+                (int(34 + 5*math.cos(math.radians(-90 + i*36))),
+                 int(34 + 5*math.sin(math.radians(-90 + i*36))))
+                for i in range(10)]
+    pygame.draw.polygon(screen, (255, 220, 0), star_pts)
+    sc_surf = font_big.render(score_str, True, accent_color)
+    screen.blit(sc_surf, (46, 14))
+
+    # ── Coins badge ──
+    coin_str = f"  {total_coins}"
+    cw = font_sm.size(coin_str)[0] + 46
+    draw_pill(10, 65, cw, 38, dark_color, (200, 160, 0), 200)
+    draw_heart(screen, 29, 84, 9, color=(255, 215, 0), outline_color=(200, 160, 0))
+    c_surf = font_sm.render(coin_str, True, (255, 215, 0))
+    screen.blit(c_surf, (38, 71))
+
+    # ── Powerup pill badges ──
+    py = 112
     if bird.immunity_time > 0:
-        frac = bird.immunity_time / 5.0
-        draw_glowing_box(10, py, 240, 58, (140, 20, 40), (255, 80, 100), 3)
-        draw_heart(screen, 30, py + 16, 10, color=(255, 50, 80), outline_color=(255, 160, 160))
-        draw_text_with_shadow('IMMUNE', 26, (255, 200, 210), (0, 0, 0), 48, py + 6, offset=1)
-        draw_text_with_shadow(f'{bird.immunity_time:.1f}s', 28, (255, 220, 220), (0, 0, 0), 170, py + 24, offset=1)
-        pygame.draw.rect(screen, (80, 10, 20), (20, py + 43, 220, 8), border_radius=4)
-        pygame.draw.rect(screen, (255, 80, 100), (20, py + 43, int(220 * frac), 8), border_radius=4)
-        py += 68
+        frac = min(1.0, bird.immunity_time / 5.0)
+        draw_pill(10, py, 230, 52, (160, 20, 40), (255, 80, 110), 220)
+        draw_heart(screen, 32, py + 14, 11, color=(255, 60, 90), outline_color=(255, 180, 190))
+        im_surf = font_sm.render(f"IMMUNE  {bird.immunity_time:.1f}s", True, (255, 220, 225))
+        screen.blit(im_surf, (50, py + 12))
+        # Thin progress bar at bottom of pill
+        pygame.draw.rect(screen, (80, 10, 20), (18, py + 44, 206, 4), border_radius=2)
+        pygame.draw.rect(screen, (255, 100, 130), (18, py + 44, int(206 * frac), 4), border_radius=2)
+        py += 62
 
     if bird.double_score_time > 0:
-        frac = bird.double_score_time / 5.0
-        draw_glowing_box(10, py, 240, 58, (130, 110, 0), (255, 240, 0), 3)
-        # Star icon
-        star_pts = []
-        for i in range(10):
-            ang = math.radians(-90 + i * 36)
-            r = 10 if i % 2 == 0 else 5
-            star_pts.append((int(30 + r * math.cos(ang)), int(py + 18 + r * math.sin(ang))))
-        pygame.draw.polygon(screen, (255, 240, 0), star_pts)
-        draw_text_with_shadow('2x SCORE', 26, (255, 255, 160), (0, 0, 0), 48, py + 6, offset=1)
-        draw_text_with_shadow(f'{bird.double_score_time:.1f}s', 28, (255, 255, 160), (0, 0, 0), 170, py + 24, offset=1)
-        pygame.draw.rect(screen, (80, 70, 0), (20, py + 43, 220, 8), border_radius=4)
-        pygame.draw.rect(screen, (255, 240, 0), (20, py + 43, int(220 * frac), 8), border_radius=4)
+        frac = min(1.0, bird.double_score_time / 5.0)
+        draw_pill(10, py, 230, 52, (120, 100, 0), (255, 240, 0), 220)
+        # Mini star icon
+        sp = [(int(30 + (8 if i%2==0 else 4)*math.cos(math.radians(-90+i*36))),
+               int(py+14 + (8 if i%2==0 else 4)*math.sin(math.radians(-90+i*36))))
+              for i in range(10)]
+        pygame.draw.polygon(screen, (255, 240, 0), sp)
+        ds_surf = font_sm.render(f"2x SCORE  {bird.double_score_time:.1f}s", True, (255, 255, 160))
+        screen.blit(ds_surf, (50, py + 12))
+        pygame.draw.rect(screen, (80, 70, 0), (18, py + 44, 206, 4), border_radius=2)
+        pygame.draw.rect(screen, (255, 240, 0), (18, py + 44, int(206 * frac), 4), border_radius=2)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -796,9 +885,11 @@ def show_main_menu():
     while menu_running:
         clock.tick(60)
         screen.blit(BACKGROUND, (0, 0))
-        draw_glowing_box(SCREEN_WIDHT - 260, 10, 250, 80, dark_color, accent_color, 4)
-        draw_text_with_shadow(f'Total Coins: {total_coins}', 36, (255, 215, 0), shadow_color,
-                              SCREEN_WIDHT - 245, 25, offset=2)
+        draw_pill(SCREEN_WIDHT - 250, 10, 235, 50, dark_color, (200, 160, 0), 210)
+        draw_heart(screen, SCREEN_WIDHT - 232, 35, 11, color=(255, 215, 0), outline_color=(200, 150, 0))
+        coin_font = get_font(34)
+        cs = coin_font.render(f"  {total_coins} coins", True, (255, 215, 0))
+        screen.blit(cs, (SCREEN_WIDHT - 220, 22))
         draw_title_box('FLAPPY BIRD', 'Press SPACE to Play', THEMES[current_theme])
         button_width = 240
         button_height = 70
@@ -881,7 +972,12 @@ def show_shop_menu():
     while shop_running:
         clock.tick(60)
         screen.blit(BACKGROUND, (0, 0))
-        draw_title_box('BIRD SHOP', f'Coins: {total_coins}', THEMES[current_theme])
+        draw_title_box('BIRD SHOP', '', THEMES[current_theme])
+        # Coins pill top-right
+        draw_pill(SCREEN_WIDHT - 250, 10, 235, 50, dark_color, (200, 160, 0), 210)
+        draw_heart(screen, SCREEN_WIDHT - 232, 35, 11, color=(255, 215, 0), outline_color=(200, 150, 0))
+        cf = get_font(34)
+        screen.blit(cf.render(f"  {total_coins} coins", True, (255, 215, 0)), (SCREEN_WIDHT - 220, 22))
         skins_per_screen = 4
         start_idx = (selected_skin // skins_per_screen) * skins_per_screen
         visible_skins = BIRD_SKINS[start_idx:start_idx + skins_per_screen]
