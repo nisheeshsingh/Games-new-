@@ -1,0 +1,10 @@
+[project]
+name = "flappy"
+version = "0.1.0"
+description = "A Flappy Bird game with themes, bird skins, powerups, and difficulty settings"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pygame>=2.1.0",
+    "numpy>=1.21.0",
+]
