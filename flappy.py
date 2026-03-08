@@ -374,44 +374,43 @@ class Powerup(pygame.sprite.Sprite):
         return self.elapsed < self.lifetime
     
     def draw(self, screen):
-        """Draw powerup with rotating effect and pulsing glow - no artifacts"""
-        angle = (self.elapsed * 120) % 360
+        """Draw powerup with rotating effect - direct drawing no artifacts"""
+        angle_rad = (self.elapsed * 120 * 3.14159 / 180) % (2 * 3.14159)
         scale = 1.0 + 0.15 * pygame.math.Vector2(1, 0).rotate(self.pulse_time * 180).y
         
-        # Create fresh LARGE surface for this frame to avoid rotation artifacts
-        temp_surf = pygame.Surface((120, 120), pygame.SRCALPHA)
-        temp_surf.fill((0, 0, 0, 0))
+        cx, cy = self.rect.center
         
-        # Draw the shape fresh on temporary surface (centered in larger surface)
         if self.powerup_type == self.IMMUNITY:
-            # Draw heart (centered in 120x120)
-            pygame.draw.circle(temp_surf, (255, 50, 50), (40, 40), 12)
-            pygame.draw.circle(temp_surf, (255, 50, 50), (80, 40), 12)
-            pygame.draw.polygon(temp_surf, (255, 50, 50), [(20, 45), (100, 45), (60, 90)])
-            pygame.draw.circle(temp_surf, (255, 150, 150), (40, 40), 7)
-            pygame.draw.circle(temp_surf, (255, 150, 150), (80, 40), 7)
+            # Draw rotating heart directly
+            # Left bump
+            pygame.draw.circle(screen, (255, 50, 50), (int(cx - 8*scale), int(cy - 8*scale)), int(8*scale))
+            # Right bump
+            pygame.draw.circle(screen, (255, 50, 50), (int(cx + 8*scale), int(cy - 8*scale)), int(8*scale))
+            # Bottom point
+            pygame.draw.polygon(screen, (255, 50, 50), [
+                (int(cx - 16*scale), int(cy)), 
+                (int(cx + 16*scale), int(cy)), 
+                (int(cx), int(cy + 20*scale))
+            ])
+            # Highlight
+            pygame.draw.circle(screen, (255, 100, 100), (int(cx - 8*scale), int(cy - 8*scale)), int(5*scale))
+            pygame.draw.circle(screen, (255, 100, 100), (int(cx + 8*scale), int(cy - 8*scale)), int(5*scale))
         else:
-            # Draw star - fresh calculation each frame (centered in 120x120)
+            # Draw rotating star directly (calculate points with rotation)
             points = []
             for i in range(10):
-                angle_rad = i * 3.14159 / 5
+                angle_point = angle_rad + (i * 3.14159 / 5)
                 if i % 2 == 0:
-                    r = 28
+                    r = 16 * scale
                 else:
-                    r = 14
-                x = 60 + r * pygame.math.Vector2(1, 0).rotate(angle_rad * 180 / 3.14159).x
-                y = 60 + r * pygame.math.Vector2(1, 0).rotate(angle_rad * 180 / 3.14159).y
-                points.append((x, y))
-            pygame.draw.polygon(temp_surf, (255, 240, 0), points)
-            pygame.draw.polygon(temp_surf, (255, 255, 100), points, 2)
-        
-        # Rotate and scale the fresh surface
-        rotated = pygame.transform.rotate(temp_surf, angle)
-        if scale != 1.0:
-            rotated = pygame.transform.scale(rotated, (int(rotated.get_width() * scale), int(rotated.get_height() * scale)))
-        
-        rotated_rect = rotated.get_rect(center=self.rect.center)
-        screen.blit(rotated, rotated_rect)
+                    r = 8 * scale
+                x = cx + r * pygame.math.Vector2(1, 0).rotate(angle_point * 180 / 3.14159).x
+                y = cy + r * pygame.math.Vector2(1, 0).rotate(angle_point * 180 / 3.14159).y
+                points.append((int(x), int(y)))
+            
+            if len(points) >= 3:
+                pygame.draw.polygon(screen, (255, 240, 0), points)
+                pygame.draw.polygon(screen, (255, 255, 100), points, 2)
 
 
 class FloatingScore:
@@ -450,6 +449,55 @@ class FloatingScore:
         glow_surf.blit(text_surf, (10, 10))
         glow_surf.set_alpha(alpha)
         screen.blit(glow_surf, (int(self.x - glow_surf.get_width()//2), int(self.y - glow_surf.get_height()//2)))
+
+
+def draw_bird_direct(screen, bird):
+    """Draw bird directly as shapes with rotation - no surface artifacts"""
+    import math
+    
+    cx = bird.rect.centerx
+    cy = bird.rect.centery
+    angle = min(max(-bird.speed * 2, -25), 90)
+    angle_rad = angle * 3.14159 / 180
+    
+    # Helper to rotate a point around center
+    def rotate_point(x, y, angle_rad, cx, cy):
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+        dx = x - cx
+        dy = y - cy
+        return (
+            cx + dx * cos_a - dy * sin_a,
+            cy + dx * sin_a + dy * cos_a
+        )
+    
+    # Bird proportions (relative to center)
+    # Body
+    body_points = [
+        (-8, -4), (8, -4), (10, 4), (-10, 4)
+    ]
+    rotated_body = [rotate_point(x, y, angle_rad, 0, 0) for x, y in body_points]
+    pygame.draw.polygon(screen, (255, 200, 0), [(x+cx, y+cy) for x, y in rotated_body])
+    
+    # Head
+    head_center = rotate_point(6, -2, angle_rad, 0, 0)
+    pygame.draw.circle(screen, (255, 220, 0), (int(head_center[0]+cx), int(head_center[1]+cy)), 5)
+    
+    # Eye
+    eye_center = rotate_point(10, -4, angle_rad, 0, 0)
+    pygame.draw.circle(screen, (255, 255, 255), (int(eye_center[0]+cx), int(eye_center[1]+cy)), 2)
+    pygame.draw.circle(screen, (0, 0, 0), (int(eye_center[0]+cx), int(eye_center[1]+cy)), 1)
+    
+    # Beak
+    beak_points = [(12, -2), (16, -3), (12, 1)]
+    rotated_beak = [rotate_point(x, y, angle_rad, 0, 0) for x, y in beak_points]
+    pygame.draw.polygon(screen, (255, 170, 0), [(x+cx, y+cy) for x, y in rotated_beak])
+    
+    # Wing (animated)
+    wing_offset = int(3 * math.sin(bird.current_image * 1.5))
+    wing_points = [(0, -2+wing_offset), (6, -6+wing_offset), (8, -2+wing_offset), (2, 2+wing_offset)]
+    rotated_wing = [rotate_point(x, y, angle_rad, 0, 0) for x, y in wing_points]
+    pygame.draw.polygon(screen, (240, 180, 0), [(x+cx, y+cy) for x, y in rotated_wing])
 
 
 class Bird(pygame.sprite.Sprite):
@@ -1413,8 +1461,8 @@ if __name__ == "__main__":
                             bird.double_score_time = 5.0  # 5 seconds of 2x score
                             score = int(score * 2)  # Multiply current score by 2
             
-                # Draw bird manually with proper rotation (no artifact rendering)
-                screen.blit(bird.rotated_image, bird.rect)
+                # Draw bird directly without surface rotation
+                draw_bird_direct(screen, bird)
                 
                 pipe_group.draw(screen)
                 ground_group.draw(screen)
