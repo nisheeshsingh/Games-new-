@@ -87,7 +87,7 @@ def play(sound):
 
 
 THEMES = [
-    {"name": "classic",   "bg": (135, 206, 250), "pipe": (34, 139, 34), "bird": (255, 200, 0), "ground": (139, 69, 19), "text": (255, 255, 255), "accent": (255, 255, 255), "shadow": (50, 50, 50), "dark": (50, 50, 50)},
+    {"name": "classic",   "bg": (135, 206, 250), "pipe": (34, 139, 34), "bird": (255, 200, 0), "ground": (139, 69, 19), "text": (255, 255, 255), "accent": (30, 80, 180), "shadow": (10, 30, 80), "dark": (20, 50, 120)},
     {"name": "neon",      "bg": (0, 0, 0),       "pipe": (255, 20, 147), "bird": (0, 255, 255), "ground": (255, 69, 0), "text": (0, 255, 255), "accent": (255, 255, 0), "shadow": (100, 100, 100), "dark": (20, 20, 30)},
     {"name": "cybercity", "bg": (10, 10, 50),    "pipe": (0, 255, 0),    "bird": (255, 0, 255), "ground": (50, 50, 50), "text": (100, 255, 100), "accent": (255, 100, 255), "shadow": (100, 100, 100), "dark": (20, 20, 50)},
     {"name": "hell",      "bg": (100, 0, 0),      "pipe": (139, 0, 0),    "bird": (255, 69, 0),   "ground": (80, 0, 0), "text": (255, 255, 100), "accent": (255, 100, 0), "shadow": (100, 100, 100), "dark": (60, 20, 0)},
@@ -640,28 +640,29 @@ def draw_text_with_shadow(text, size, color, shadow_color, x, y, offset=3):
 def draw_glowing_box(x, y, width, height, color, glow_color, border_width=3):
     # Deep drop shadow
     shadow_surface = pygame.Surface((width + 20, height + 20), pygame.SRCALPHA)
-    pygame.draw.rect(shadow_surface, (0, 0, 0, 110), (5, 7, width + 10, height + 10), border_radius=14)
+    pygame.draw.rect(shadow_surface, (0, 0, 0, 100), (5, 7, width + 10, height + 10), border_radius=14)
     screen.blit(shadow_surface, (x - 8, y + 5))
     # Soft outer glow rings
     for i in range(border_width + 6, 0, -1):
-        alpha = int(160 * (1 - i / (border_width + 6)) * 0.4)
+        alpha = int(140 * (1 - i / (border_width + 6)) * 0.4)
         glow_surf = pygame.Surface((width + i*2 + 6, height + i*2 + 6), pygame.SRCALPHA)
         pygame.draw.rect(glow_surf, (*glow_color, alpha),
                          (0, 0, width + i*2 + 6, height + i*2 + 6), border_radius=16)
         screen.blit(glow_surf, (x - i - 3, y - i - 3))
-    # Glass body
+    # Glass body — use draw.rect so corners are transparent (not fill which ignores border_radius)
     glass_surf = pygame.Surface((width, height), pygame.SRCALPHA)
     r, g, b = color[0], color[1], color[2]
-    glass_surf.fill((r, g, b, 215))
+    pygame.draw.rect(glass_surf, (r, g, b, 210), (0, 0, width, height), border_radius=12)
     # Top glass-sheen highlight
     hi_h = max(3, height // 4)
     hi_surf = pygame.Surface((width - 6, hi_h), pygame.SRCALPHA)
-    hi_surf.fill((min(255, r+80), min(255, g+80), min(255, b+80), 70))
+    pygame.draw.rect(hi_surf, (min(255,r+80), min(255,g+80), min(255,b+80), 65),
+                     (0, 0, width - 6, hi_h), border_radius=6)
     glass_surf.blit(hi_surf, (3, 3))
-    # Bottom subtle shadow band
+    # Bottom shadow band
     sh_h = max(2, height // 10)
     sh_surf = pygame.Surface((width - 6, sh_h), pygame.SRCALPHA)
-    sh_surf.fill((0, 0, 0, 50))
+    pygame.draw.rect(sh_surf, (0, 0, 0, 45), (0, 0, width - 6, sh_h), border_radius=4)
     glass_surf.blit(sh_surf, (3, height - sh_h - 2))
     screen.blit(glass_surf, (x, y))
     # Outer border + inner bright rim
@@ -694,36 +695,35 @@ def draw_button(x, y, width, height, text, color, text_color, glow_color, is_hov
 
 
 def draw_title_box(title, subtitle, theme_data):
-    # Top accent bar (gradient fade out to sides)
+    # Top accent bar
     bar_w = SCREEN_WIDHT - 80
     for i in range(6):
         alpha = int(255 * (1 - i / 6.0))
-        bar_surf = pygame.Surface((bar_w, 4 - min(i, 2)), pygame.SRCALPHA)
+        bar_surf = pygame.Surface((bar_w, max(1, 4 - min(i, 2))), pygame.SRCALPHA)
         bar_surf.fill((*theme_data['accent'], alpha))
         screen.blit(bar_surf, (40, 8 + i))
 
-    # Title text with a behind-glow blob
     title_font = get_font(76)
     tw, th = title_font.size(title)
     title_x = SCREEN_WIDHT // 2 - tw // 2
 
-    # Glow blob behind title
-    blob_surf = pygame.Surface((tw + 80, th + 30), pygame.SRCALPHA)
-    for r in range(40, 0, -4):
-        a = int(18 * (1 - r / 40.0))
-        pygame.draw.ellipse(blob_surf, (*theme_data['accent'], a),
-                            (40 - r, 15 - r//2, tw + r*2, th + r))
-    screen.blit(blob_surf, (title_x - 40, 14))
+    # Dark semi-transparent backing pill so title is ALWAYS readable on any bg
+    backing = pygame.Surface((tw + 40, th + 16), pygame.SRCALPHA)
+    backing.fill((0, 0, 0, 110))
+    pygame.draw.rect(backing, (0, 0, 0, 110), backing.get_rect(), border_radius=14)
+    screen.blit(backing, (title_x - 20, 12))
 
-    # Shadow layers then title
-    for off in [5, 3, 1]:
-        sh = title_font.render(title, True, theme_data['shadow'])
-        sh.set_alpha(int(200 * (1 - off/6)))
-        screen.blit(sh, (title_x + off, 18 + off))
+    # Black stroke outline (render offset in all 4 directions)
+    for dx, dy in [(-2,0),(2,0),(0,-2),(0,2),(-2,-2),(2,-2),(-2,2),(2,2)]:
+        stroke = title_font.render(title, True, (0, 0, 0))
+        stroke.set_alpha(180)
+        screen.blit(stroke, (title_x + dx, 18 + dy))
+
+    # Main title in accent color
     title_surf = title_font.render(title, True, theme_data['accent'])
     screen.blit(title_surf, (title_x, 18))
 
-    # Decorative ruled line below title with jewel endcaps
+    # Decorative ruled line with jewel endcaps
     line_y = 100
     pygame.draw.line(screen, theme_data['accent'], (80, line_y), (SCREEN_WIDHT - 80, line_y), 3)
     pygame.draw.line(screen, theme_data['accent'], (80, line_y + 5), (SCREEN_WIDHT - 80, line_y + 5), 1)
@@ -736,10 +736,10 @@ def draw_title_box(title, subtitle, theme_data):
         sf = get_font(30)
         sw2 = sf.size(subtitle)[0]
         sx = SCREEN_WIDHT // 2 - sw2 // 2
-        for off in [3, 1]:
-            sh = sf.render(subtitle, True, theme_data['shadow'])
-            sh.set_alpha(150)
-            screen.blit(sh, (sx + off, 68 + off))
+        for dx, dy in [(-1,1),(1,1),(0,2)]:
+            sh_s = sf.render(subtitle, True, (0, 0, 0))
+            sh_s.set_alpha(160)
+            screen.blit(sh_s, (sx + dx, 68 + dy))
         screen.blit(sf.render(subtitle, True, theme_data['text']), (sx, 68))
 
 
@@ -1268,9 +1268,13 @@ if __name__ == "__main__":
                     ground_group.add(Ground(GROUND_WIDHT - 20, ground_img))
 
                 if is_off_screen(pipe_group.sprites()[0]):
-                    pipe_group.remove(pipe_group.sprites()[0])
-                    pipe_group.remove(pipe_group.sprites()[0])
-                    rightmost_x = max(pipe.rect.x for pipe in pipe_group)
+                    offscreen_pipes = [p for p in pipe_group.sprites() if is_off_screen(p)]
+                    for p in offscreen_pipes:
+                        pipe_group.remove(p)
+                    if len(pipe_group) > 0:
+                        rightmost_x = max(pipe.rect.x for pipe in pipe_group)
+                    else:
+                        rightmost_x = SCREEN_WIDHT
                     pipes = get_random_pipes(rightmost_x + PIPE_SPACING, pipe_pair_id)
                     pipe_pair_id += 1
                     pipe_group.add(pipes[0]); pipe_group.add(pipes[1])
@@ -1338,10 +1342,13 @@ if __name__ == "__main__":
 
                 pygame.display.update()
 
-                # Collision detection
+                # Collision detection — check EVERY frame before anything else clears sprites
                 body_rect = pygame.Rect(bird.rect.centerx - 10, bird.rect.centery - 8, 20, 16)
                 ground_collision = any(body_rect.colliderect(s.rect) for s in ground_group.sprites())
-                pipe_collision = any(body_rect.colliderect(s.rect) for s in pipe_group.sprites()) and bird.immunity_time <= 0
+                pipe_collision = (
+                    any(body_rect.colliderect(s.rect) for s in pipe_group.sprites())
+                    and bird.immunity_time <= 0
+                )
                 ceiling_collision = bird.rect.top <= 5
 
                 if ground_collision or pipe_collision or ceiling_collision:
@@ -1349,8 +1356,16 @@ if __name__ == "__main__":
                     coins_earned_this_run = int(score)
                     total_coins += coins_earned_this_run
                     high_score = max(high_score, score)
-                    time.sleep(0.5)
+                    # Non-blocking death pause — keep event loop alive
+                    death_timer = 0
+                    while death_timer < 35:
+                        clock.tick(60)
+                        death_timer += 1
+                        for ev in pygame.event.get():
+                            if ev.type == QUIT:
+                                pygame.quit(); sys.exit()
                     playing = False
+                    continue
 
                 for pipe in pipe_group:
                     if pipe.pair_id not in scored_pairs and pipe.rect.right < bird.rect.left:
