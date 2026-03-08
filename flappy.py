@@ -104,7 +104,7 @@ THEMES = [
     {"name": "forest",    "bg": (51, 102, 51),    "pipe": (139, 35, 35),  "bird": (255, 215, 0),  "ground": (34, 85, 34),  "text": (255, 255, 200), "accent": (144, 238, 144), "shadow": (100, 100, 100), "dark": (25, 60, 25)},
     {"name": "ocean",     "bg": (0, 105, 148),    "pipe": (70, 130, 180), "bird": (255, 255, 0),  "ground": (188, 143, 143), "text": (255, 255, 255), "accent": (64, 224, 208), "shadow": (100, 100, 100), "dark": (0, 71, 107)},
     {"name": "sunset",    "bg": (255, 140, 60),   "pipe": (180, 82, 45),  "bird": (255, 20, 147), "ground": (139, 69, 19),  "text": (255, 250, 205), "accent": (255, 215, 0),  "shadow": (100, 100, 100),  "dark": (160, 82, 45)},
-    {"name": "midnight",  "bg": (20, 24, 82),     "pipe": (100, 100, 150), "bird": (0, 255, 255), "ground": (40, 40, 60),  "text": (173, 216, 230), "accent": (138, 43, 226), "shadow": (100, 100, 100), "dark": (30, 30, 80)},
+    {"name": "midnight",  "bg": (10, 10, 30),     "pipe": (80, 80, 120), "bird": (0, 255, 255), "ground": (30, 30, 50),  "text": (173, 216, 230), "accent": (100, 200, 255), "shadow": (50, 50, 100), "dark": (10, 10, 40)},
 ]
 current_theme = 0
 
@@ -374,43 +374,62 @@ class Powerup(pygame.sprite.Sprite):
         return self.elapsed < self.lifetime
     
     def draw(self, screen):
-        """Draw powerup with rotating effect - direct drawing no artifacts"""
-        angle_rad = (self.elapsed * 120 * 3.14159 / 180) % (2 * 3.14159)
-        scale = 1.0 + 0.15 * pygame.math.Vector2(1, 0).rotate(self.pulse_time * 180).y
+        """Draw powerup with rotating effect - beautiful rendering"""
+        import math
+        angle = (self.elapsed * 180) % 360
+        angle_rad = angle * 3.14159 / 180
+        scale = 1.0 + 0.2 * math.sin(self.pulse_time * 3.14159)
         
         cx, cy = self.rect.center
         
         if self.powerup_type == self.IMMUNITY:
-            # Draw rotating heart directly
-            # Left bump
-            pygame.draw.circle(screen, (255, 50, 50), (int(cx - 8*scale), int(cy - 8*scale)), int(8*scale))
-            # Right bump
-            pygame.draw.circle(screen, (255, 50, 50), (int(cx + 8*scale), int(cy - 8*scale)), int(8*scale))
-            # Bottom point
+            # Draw beautiful heart shape
+            size = 10 * scale
+            # Top left bump
+            pygame.draw.circle(screen, (255, 50, 50), (int(cx - size), int(cy - size//2)), int(size))
+            pygame.draw.circle(screen, (255, 100, 100), (int(cx - size), int(cy - size//2)), int(size//2))
+            # Top right bump
+            pygame.draw.circle(screen, (255, 50, 50), (int(cx + size), int(cy - size//2)), int(size))
+            pygame.draw.circle(screen, (255, 100, 100), (int(cx + size), int(cy - size//2)), int(size//2))
+            # Bottom triangle
             pygame.draw.polygon(screen, (255, 50, 50), [
-                (int(cx - 16*scale), int(cy)), 
-                (int(cx + 16*scale), int(cy)), 
-                (int(cx), int(cy + 20*scale))
+                (int(cx - size*1.8), int(cy + size*0.5)),
+                (int(cx + size*1.8), int(cy + size*0.5)),
+                (int(cx), int(cy + size*2.5))
             ])
-            # Highlight
-            pygame.draw.circle(screen, (255, 100, 100), (int(cx - 8*scale), int(cy - 8*scale)), int(5*scale))
-            pygame.draw.circle(screen, (255, 100, 100), (int(cx + 8*scale), int(cy - 8*scale)), int(5*scale))
+            # Shine
+            pygame.draw.circle(screen, (255, 150, 150), (int(cx - size*0.5), int(cy - size)), int(size//3))
         else:
-            # Draw rotating star directly (calculate points with rotation)
+            # Draw beautiful rotating star
+            size = 14 * scale
             points = []
             for i in range(10):
                 angle_point = angle_rad + (i * 3.14159 / 5)
                 if i % 2 == 0:
-                    r = 16 * scale
+                    r = size
                 else:
-                    r = 8 * scale
-                x = cx + r * pygame.math.Vector2(1, 0).rotate(angle_point * 180 / 3.14159).x
-                y = cy + r * pygame.math.Vector2(1, 0).rotate(angle_point * 180 / 3.14159).y
+                    r = size * 0.5
+                x = cx + r * math.cos(angle_point)
+                y = cy + r * math.sin(angle_point)
                 points.append((int(x), int(y)))
             
-            if len(points) >= 3:
+            if len(points) >= 5:
                 pygame.draw.polygon(screen, (255, 240, 0), points)
-                pygame.draw.polygon(screen, (255, 255, 100), points, 2)
+                pygame.draw.polygon(screen, (255, 200, 0), points, 2)
+                # Inner shine
+                inner_size = size * 0.5
+                inner_points = []
+                for i in range(10):
+                    angle_point = angle_rad + (i * 3.14159 / 5)
+                    if i % 2 == 0:
+                        r = inner_size * 0.5
+                    else:
+                        r = inner_size * 0.2
+                    x = cx + r * math.cos(angle_point)
+                    y = cy + r * math.sin(angle_point)
+                    inner_points.append((int(x), int(y)))
+                if len(inner_points) >= 5:
+                    pygame.draw.polygon(screen, (255, 255, 150), inner_points)
 
 
 class FloatingScore:
@@ -452,7 +471,7 @@ class FloatingScore:
 
 
 def draw_bird_direct(screen, bird):
-    """Draw bird directly as shapes with rotation - no surface artifacts"""
+    """Draw bird directly as shapes with rotation - beautiful rendering"""
     import math
     
     cx = bird.rect.centerx
@@ -460,44 +479,49 @@ def draw_bird_direct(screen, bird):
     angle = min(max(-bird.speed * 2, -25), 90)
     angle_rad = angle * 3.14159 / 180
     
-    # Helper to rotate a point around center
-    def rotate_point(x, y, angle_rad, cx, cy):
+    # Helper to rotate a point
+    def rotate_point(x, y, angle_rad):
         cos_a = math.cos(angle_rad)
         sin_a = math.sin(angle_rad)
-        dx = x - cx
-        dy = y - cy
-        return (
-            cx + dx * cos_a - dy * sin_a,
-            cy + dx * sin_a + dy * cos_a
-        )
+        return (x * cos_a - y * sin_a, x * sin_a + y * cos_a)
     
-    # Bird proportions (relative to center)
-    # Body
-    body_points = [
-        (-8, -4), (8, -4), (10, 4), (-10, 4)
-    ]
-    rotated_body = [rotate_point(x, y, angle_rad, 0, 0) for x, y in body_points]
-    pygame.draw.polygon(screen, (255, 200, 0), [(x+cx, y+cy) for x, y in rotated_body])
+    # Main body (larger, more bird-like)
+    body_points = [(-10, -3), (12, -4), (14, 3), (6, 6), (-8, 5)]
+    rotated_body = [rotate_point(x, y, angle_rad) for x, y in body_points]
+    pygame.draw.polygon(screen, (255, 210, 0), [(int(x+cx), int(y+cy)) for x, y in rotated_body])
+    pygame.draw.polygon(screen, (220, 180, 0), [(int(x+cx), int(y+cy)) for x, y in rotated_body], 2)
     
-    # Head
-    head_center = rotate_point(6, -2, angle_rad, 0, 0)
-    pygame.draw.circle(screen, (255, 220, 0), (int(head_center[0]+cx), int(head_center[1]+cy)), 5)
+    # Head (rounded)
+    head_pos = rotate_point(12, -2, angle_rad)
+    pygame.draw.circle(screen, (255, 220, 0), (int(head_pos[0]+cx), int(head_pos[1]+cy)), 7)
+    pygame.draw.circle(screen, (220, 190, 0), (int(head_pos[0]+cx), int(head_pos[1]+cy)), 7, 1)
     
-    # Eye
-    eye_center = rotate_point(10, -4, angle_rad, 0, 0)
-    pygame.draw.circle(screen, (255, 255, 255), (int(eye_center[0]+cx), int(eye_center[1]+cy)), 2)
-    pygame.draw.circle(screen, (0, 0, 0), (int(eye_center[0]+cx), int(eye_center[1]+cy)), 1)
+    # Eye (bright and expressive)
+    eye_pos = rotate_point(17, -3, angle_rad)
+    pygame.draw.circle(screen, (255, 255, 255), (int(eye_pos[0]+cx), int(eye_pos[1]+cy)), 3)
+    pygame.draw.circle(screen, (0, 0, 0), (int(eye_pos[0]+cx)-1, int(eye_pos[1]+cy)-1), 1)
     
-    # Beak
-    beak_points = [(12, -2), (16, -3), (12, 1)]
-    rotated_beak = [rotate_point(x, y, angle_rad, 0, 0) for x, y in beak_points]
-    pygame.draw.polygon(screen, (255, 170, 0), [(x+cx, y+cy) for x, y in rotated_beak])
+    # Beak (prominent)
+    beak_tip = rotate_point(19, -1, angle_rad)
+    beak_bottom = rotate_point(19, 2, angle_rad)
+    beak_base = rotate_point(15, 1, angle_rad)
+    pygame.draw.polygon(screen, (255, 150, 0), [
+        (int(beak_base[0]+cx), int(beak_base[1]+cy)),
+        (int(beak_tip[0]+cx), int(beak_tip[1]+cy)),
+        (int(beak_bottom[0]+cx), int(beak_bottom[1]+cy))
+    ])
     
-    # Wing (animated)
-    wing_offset = int(3 * math.sin(bird.current_image * 1.5))
-    wing_points = [(0, -2+wing_offset), (6, -6+wing_offset), (8, -2+wing_offset), (2, 2+wing_offset)]
-    rotated_wing = [rotate_point(x, y, angle_rad, 0, 0) for x, y in wing_points]
-    pygame.draw.polygon(screen, (240, 180, 0), [(x+cx, y+cy) for x, y in rotated_wing])
+    # Wing (animated flapping)
+    wing_y = int(3 * math.sin(bird.current_image * 1.57))
+    wing_points = [(2, -3+wing_y), (10, -8+wing_y), (11, -2+wing_y)]
+    rotated_wing = [rotate_point(x, y, angle_rad) for x, y in wing_points]
+    pygame.draw.polygon(screen, (240, 160, 0), [(int(x+cx), int(y+cy)) for x, y in rotated_wing])
+    pygame.draw.polygon(screen, (200, 140, 0), [(int(x+cx), int(y+cy)) for x, y in rotated_wing], 1)
+    
+    # Tail feathers
+    tail_points = [(-10, 0), (-16, -4), (-14, 2)]
+    rotated_tail = [rotate_point(x, y, angle_rad) for x, y in tail_points]
+    pygame.draw.polygon(screen, (230, 190, 0), [(int(x+cx), int(y+cy)) for x, y in rotated_tail])
 
 
 class Bird(pygame.sprite.Sprite):
@@ -600,6 +624,47 @@ def tint(surface, color):
     surf = surface.copy()
     surf.fill(color, special_flags=pygame.BLEND_MULT)
     return surf
+
+
+def draw_midnight_background(screen):
+    """Draw beautiful midnight background with stars and moon"""
+    import random
+    
+    # Black starfield background
+    screen.fill((10, 10, 30))
+    
+    # Draw stars (deterministic but looks random)
+    random.seed(42)  # Same seed = same star positions
+    for _ in range(100):
+        star_x = random.randint(0, SCREEN_WIDHT)
+        star_y = random.randint(0, int(SCREEN_HEIGHT * 0.7))
+        star_size = random.randint(1, 3)
+        brightness = random.randint(150, 255)
+        pygame.draw.circle(screen, (brightness, brightness, brightness), (star_x, star_y), star_size)
+    
+    # Draw moon
+    moon_x = int(SCREEN_WIDHT * 0.85)
+    moon_y = int(SCREEN_HEIGHT * 0.2)
+    moon_radius = 40
+    pygame.draw.circle(screen, (240, 240, 200), (moon_x, moon_y), moon_radius)
+    # Moon craters (shadow effect)
+    pygame.draw.circle(screen, (180, 180, 140), (moon_x + 15, moon_y - 10), 12)
+    pygame.draw.circle(screen, (180, 180, 140), (moon_x - 20, moon_y + 15), 8)
+    pygame.draw.circle(screen, (180, 180, 140), (moon_x + 5, moon_y + 20), 6)
+
+
+def tint(surface, color):
+    surf = surface.copy()
+    surf.fill(color, special_flags=pygame.BLEND_MULT)
+    return surf
+
+
+def draw_background(screen, theme_name=None):
+    """Draw background with special handling for midnight theme"""
+    if theme_name == "midnight":
+        draw_midnight_background(screen)
+    else:
+        screen.blit(BACKGROUND, (0, 0))
 
 
 def load_base_images():
@@ -1357,7 +1422,7 @@ if __name__ == "__main__":
                         play(wing)
                         begin = False
             
-                screen.blit(BACKGROUND, (0, 0))
+                draw_background(screen, THEMES[current_theme]["name"])
             
                 if is_off_screen(ground_group.sprites()[0]):
                     ground_group.remove(ground_group.sprites()[0])
@@ -1367,8 +1432,8 @@ if __name__ == "__main__":
                 bird.begin()
                 ground_group.update()
             
-                # Draw bird manually with full transparency during GET READY
-                screen.blit(bird.image, bird.rect)
+                # Draw bird directly without surface artifacts
+                draw_bird_direct(screen, bird)
                 ground_group.draw(screen)
             
                 # Draw "GET READY" text
@@ -1404,7 +1469,7 @@ if __name__ == "__main__":
                         bird.bump()
                         play(wing)
             
-                screen.blit(BACKGROUND, (0, 0))
+                draw_background(screen, THEMES[current_theme]["name"])
             
                 if is_off_screen(ground_group.sprites()[0]):
                     ground_group.remove(ground_group.sprites()[0])
