@@ -1296,22 +1296,58 @@ def show_how_to_play():
         pygame.display.update()
 
 
+def _draw_main_menu_title(text_col, shadow_col):
+    """Draw the FLAPPY BIRD title for the main menu in pure white on black."""
+    font = get_font(88)
+    tw, th = font.size('FLAPPY BIRD')
+    tx = SCREEN_W // 2 - tw // 2
+    # Thick black stroke (8 directions)
+    for dx, dy in [(-3,0),(3,0),(0,-3),(0,3),(-3,-3),(3,-3),(-3,3),(3,3),(-2,2),(2,-2)]:
+        st = font.render('FLAPPY BIRD', True, (0,0,0)); st.set_alpha(220)
+        screen.blit(st, (tx+dx, 22+dy))
+    # Main title in white
+    screen.blit(font.render('FLAPPY BIRD', True, text_col), (tx, 22))
+    # Subtitle
+    sf = get_font(28)
+    sub = 'Press SPACE or click to Play'
+    sw = sf.size(sub)[0]
+    sx = SCREEN_W // 2 - sw // 2
+    for dx, dy in [(-1,1),(1,1)]:
+        s2 = sf.render(sub, True, (0,0,0)); s2.set_alpha(160)
+        screen.blit(s2, (sx+dx, 118+dy))
+    screen.blit(sf.render(sub, True, (180,180,180)), (sx, 118))
+    # Decorative ruled line
+    ly = 152
+    pygame.draw.line(screen, (80,80,80), (60, ly), (SCREEN_W-60, ly), 1)
+
+
 def show_main_menu():
     global current_theme,bird_imgs,pipe_img,ground_img,text_color,accent_color,shadow_color,dark_color,total_coins
     sel=0
+    # Fixed black-and-white colour scheme for the main menu only
+    MM_BG      = (0, 0, 0)
+    MM_TEXT    = (255, 255, 255)
+    MM_SHADOW  = (60, 60, 60)
+    MM_PANEL   = (18, 18, 18)
+    MM_BORDER  = (80, 80, 80)
+    MM_HOVER   = (255, 255, 255)
+    MM_COIN    = (255, 210, 0)
     while True:
         clock.tick(60)
-        screen.blit(BACKGROUND,(0,0))
+        screen.fill(MM_BG)
         # Coin badge
-        draw_pill(SCREEN_W-248,10,234,50,dark_color,(180,140,0),215)
-        draw_heart(screen,SCREEN_W-230,35,11,(255,210,0),(180,140,0))
-        screen.blit(get_font(32).render(f"  {total_coins} coins",True,(255,210,0)),(SCREEN_W-218,22))
-        draw_title('FLAPPY BIRD','Press SPACE or click to Play')
+        draw_pill(SCREEN_W-248,10,234,50,MM_PANEL,(160,130,0),215)
+        draw_heart(screen,SCREEN_W-230,35,11,MM_COIN,(160,120,0))
+        screen.blit(get_font(32).render(f"  {total_coins} coins",True,MM_COIN),(SCREEN_W-218,22))
+        # Title in white with black backing
+        _draw_main_menu_title(MM_TEXT, MM_SHADOW)
         bw,bh=260,68; bx=SCREEN_W//2-bw//2
         btns=[(bx,185,"PLAY"),(bx,283,"SHOP"),(bx,381,"HOW TO PLAY"),(bx,479,"THEMES"),(bx,577,"QUIT")]
         for i,(x,y,lbl) in enumerate(btns):
-            draw_button(x,y,bw,bh,lbl,dark_color,accent_color if i==sel else text_color,accent_color,i==sel)
-        draw_text(screen,'UP/DOWN: Select   SPACE: Confirm',18,text_color,10,SCREEN_H-38,shadow_color,1)
+            hov = i==sel
+            bc  = MM_HOVER if hov else MM_TEXT
+            draw_button(x,y,bw,bh,lbl,MM_PANEL,bc,MM_HOVER if hov else MM_BORDER,hov)
+        draw_text(screen,'UP/DOWN: Select   SPACE: Confirm',18,MM_TEXT,10,SCREEN_H-38,MM_SHADOW,1)
         for ev in pygame.event.get():
             if ev.type==QUIT: pygame.quit(); sys.exit()
             if ev.type==KEYDOWN:
